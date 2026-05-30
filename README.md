@@ -36,7 +36,7 @@ The skill assumes remote agent workspaces may be changed by humans, agents, auto
 
 ## Included Utilities
 
-- `scripts/validate_skills.py` checks `SKILL.md` frontmatter, naming, descriptions, draft markers, placeholder text, and common secret-shaped patterns.
+- `scripts/validate_skills.py` checks `SKILL.md` frontmatter (single-line and `>`/`|` block-scalar descriptions), naming, name/folder match, description length and trigger phrasing, draft markers, placeholder stubs (`<HOST>`-style), and common secret-shaped patterns. It uses `pyyaml` when available and falls back to a built-in parser, so it needs no dependencies. The secret and placeholder checks are heuristics, not guarantees.
 - `scripts/check_skill_index.py` checks a Markdown skill index for required columns, known sync statuses, and rows for local skills.
 
 Both scripts are read-only.

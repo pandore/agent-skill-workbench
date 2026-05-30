@@ -7,6 +7,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
@@ -18,31 +19,89 @@ SECRET_PATTERNS = [
     re.compile(r"AKIA[0-9A-Z]{16}"),
 ]
 DRAFT_WORDS = ["TO" + "DO", "TB" + "D", "FIX" + "ME", "PLACE" + "HOLDER"]
+# Placeholder-style tokens: all-caps/underscore stubs like <HOST_ALIAS>, or <...>.
+# Deliberately ignores generics (List<String>) and HTML (<div>) to avoid noise.
+PLACEHOLDER_RE = re.compile(r"<[A-Z][A-Z0-9_]*>|<\.\.\.>")
+
+
+def _strip_frontmatter_block(lines: list[str]) -> tuple[Optional[list[str]], str]:
+    """Return the frontmatter lines between fences, or an error string."""
+    if not lines or lines[0].strip() != "---":
+        return None, "missing opening YAML frontmatter delimiter"
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return lines[1:index], ""
+    return None, "missing closing YAML frontmatter delimiter"
+
+
+def _parse_with_pyyaml(block: str) -> Optional[dict[str, str]]:
+    try:
+        import yaml  # type: ignore
+    except Exception:
+        return None
+    try:
+        data = yaml.safe_load(block)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return {str(key): ("" if value is None else str(value)).strip() for key, value in data.items()}
+
+
+def _parse_minimal(fm_lines: list[str]) -> tuple[dict[str, str], list[str]]:
+    """Dependency-free fallback for top-level keys and YAML block scalars."""
+    data: dict[str, str] = {}
+    errors: list[str] = []
+    index = 0
+    while index < len(fm_lines):
+        line = fm_lines[index].rstrip("\n")
+        if not line.strip():
+            index += 1
+            continue
+        match = re.match(r"^([A-Za-z0-9_-]+):(.*)$", line)
+        if not match:
+            errors.append(f"unsupported frontmatter line: {line}")
+            index += 1
+            continue
+        key = match.group(1).strip()
+        rest = match.group(2).strip()
+        if rest in (">", "|", ">-", "|-", ">+", "|+"):
+            collected: list[str] = []
+            index += 1
+            while index < len(fm_lines) and (
+                fm_lines[index].startswith((" ", "\t")) or not fm_lines[index].strip()
+            ):
+                text = fm_lines[index].strip()
+                if text:
+                    collected.append(text)
+                index += 1
+            data[key] = " ".join(collected).strip()
+            continue
+        value = rest.strip().strip('"').strip("'")
+        index += 1
+        while index < len(fm_lines) and fm_lines[index].startswith((" ", "\t")):
+            stripped = fm_lines[index].strip()
+            if re.match(r"^[A-Za-z0-9_-]+:", stripped):
+                break
+            if stripped:
+                value = f"{value} {stripped}".strip()
+            index += 1
+        data[key] = value
+    return data, errors
 
 
 def parse_frontmatter(path: Path) -> tuple[dict[str, str], list[str]]:
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
-    errors: list[str] = []
-    if not lines or lines[0].strip() != "---":
-        return {}, [f"{path}: missing opening YAML frontmatter delimiter"]
-    end = None
-    for index, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end = index
-            break
-    if end is None:
-        return {}, [f"{path}: missing closing YAML frontmatter delimiter"]
-    data: dict[str, str] = {}
-    for line in lines[1:end]:
-        if not line.strip():
-            continue
-        if ":" not in line:
-            errors.append(f"{path}: unsupported frontmatter line: {line}")
-            continue
-        key, value = line.split(":", 1)
-        data[key.strip()] = value.strip().strip('"').strip("'")
-    return data, errors
+    fm_lines, error = _strip_frontmatter_block(lines)
+    if fm_lines is None:
+        return {}, [f"{path}: {error}"]
+    block = "\n".join(fm_lines)
+    parsed = _parse_with_pyyaml(block)
+    if parsed is not None:
+        return parsed, []
+    data, errors = _parse_minimal(fm_lines)
+    return data, [f"{path}: {error}" for error in errors]
 
 
 def validate_skill(skill_dir: Path) -> tuple[list[str], list[str]]:
@@ -76,8 +135,8 @@ def validate_skill(skill_dir: Path) -> tuple[list[str], list[str]]:
     for word in DRAFT_WORDS:
         if re.search(rf"\b{word}\b", text, re.IGNORECASE):
             warnings.append(f"{skill_file}: contains unresolved draft marker {word}")
-    if re.search(chr(60) + r"[^>\n]+" + chr(62), text):
-        warnings.append(f"{skill_file}: contains angle-bracket placeholder-style text")
+    if PLACEHOLDER_RE.search(text):
+        warnings.append(f"{skill_file}: contains placeholder-style token (e.g. <HOST> or <...>)")
 
     for pattern in SECRET_PATTERNS:
         if pattern.search(text):
