@@ -28,6 +28,7 @@ After a remote write:
 - Prefer the runtime's native skill list/check command if available.
 - If no native check exists, validate file structure and run a minimal dry-run prompt that does not mutate external systems.
 - For remote live systems, use no-delivery canaries unless the user explicitly approves real delivery.
+- For OpenClaw, Hermes, Claude Code, and Codex targets, read `runtime-adapters.md` before choosing validation commands.
 
 ## Failure Handling
 

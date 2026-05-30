@@ -29,6 +29,7 @@ Common locations:
 - Back up remote files before changing live agent workspaces.
 - Validate skill metadata, index coverage, and routing behavior.
 - Research third-party skills without installing unreviewed code.
+- Work across starter runtime profiles for OpenClaw, Hermes, Claude Code, and Codex.
 
 ## Safety Model
 
@@ -40,3 +41,7 @@ The skill assumes remote agent workspaces may be changed by humans, agents, auto
 - `scripts/check_skill_index.py` checks a Markdown skill index for required columns, known sync statuses, and rows for local skills.
 
 Both scripts are read-only.
+
+## Runtime Coverage
+
+The first supported runtime profiles are OpenClaw, Hermes, Claude Code, and Codex. The skill treats those as adapters over the same safety loop: identify source of truth, inspect live state, back up touched files, edit surgically, validate with the runtime's own checks where possible, and record evidence.

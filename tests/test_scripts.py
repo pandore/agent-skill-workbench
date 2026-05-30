@@ -175,6 +175,17 @@ ssh <HOST_ALIAS>; replace <...> first.
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Checked 1 skills: 0 errors, 0 warnings", result.stdout)
 
+    def test_runtime_adapter_reference_covers_initial_runtimes(self) -> None:
+        skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        adapter_path = SKILL_DIR / "references" / "runtime-adapters.md"
+
+        self.assertIn("references/runtime-adapters.md", skill_text)
+        self.assertTrue(adapter_path.exists())
+
+        adapter_text = adapter_path.read_text(encoding="utf-8")
+        for runtime_name in ("OpenClaw", "Hermes", "Claude Code", "Codex"):
+            self.assertIn(runtime_name, adapter_text)
+
 
 if __name__ == "__main__":
     unittest.main()

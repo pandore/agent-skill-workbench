@@ -9,14 +9,14 @@ Safe, remote-aware workflow for the full lifecycle of Agent Skills.
 
 ## Scope
 
-Use for skill work that may touch local source, remote agent workspaces, or both:
+Use for skill and capability work that may touch local source, remote agent workspaces, or both:
 
 - inspect existing skills;
 - create or edit skills;
 - research similar skills and authoring references;
 - sync or reconcile local and remote drift;
 - validate skill structure, indexes, deployment, and routing;
-- improve one agent's skill surface from observed work.
+- improve one agent's skill/capability surface from observed work.
 
 Remote workspaces are often live operational state. Treat them as authoritative until inspected.
 
@@ -43,9 +43,20 @@ Classify the request before reading large references:
 | `index` | Create or update a skill inventory/index. | `references/indexing.md` |
 | `enrich-agent` | Improve one agent's skill set from observed sessions or recurring work. | `references/agent-enrichment.md` |
 
+## Runtime Profile First
+
+For live or remote targets, identify the runtime profile before editing. Use `references/runtime-adapters.md` for the starter profiles:
+
+- OpenClaw;
+- Hermes;
+- Claude Code;
+- Codex.
+
+If the target runtime is not covered, create a temporary target profile with source of truth, access method, artifact types, safe reads, backup method, validation method, and rollback method before writing.
+
 ## Default Protocol
 
-1. Identify target agent/system, route, runtime family, local source path, remote target path, and requested write direction.
+1. Identify target agent/system, route, runtime profile, local source path, remote target path, and requested write direction.
 2. Read local project instructions and the skill index/inventory if present.
 3. Run remote preflight before any live-agent write.
 4. Snapshot touched remote files before writing.

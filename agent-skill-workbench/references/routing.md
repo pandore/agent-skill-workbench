@@ -11,6 +11,8 @@
 - `index`: update a skill inventory.
 - `enrich-agent`: improve one agent's skill set from observed work.
 
+Read `runtime-adapters.md` whenever the target is live, remote, or runtime-specific.
+
 ## Target Resolution
 
 Before changing anything, identify:
@@ -19,6 +21,7 @@ Before changing anything, identify:
 - access method for the remote environment, if any;
 - runtime family or agent framework;
 - agent id/name;
+- runtime adapter or target profile;
 - remote workspace path;
 - remote skill path;
 - local source path, when present;
